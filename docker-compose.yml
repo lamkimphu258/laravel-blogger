@@ -1,0 +1,54 @@
+version: "3.7"
+
+services:
+  app:
+    build:
+      args:
+        user: anonymous
+        uid: 1000
+        node_version: 14
+        php_version: 8-fpm
+      context: ./
+      dockerfile: Dockerfile
+    image: blogger-laravel
+    container_name: app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./src:/var/www
+    networks:
+      - my-network
+
+  db:
+    image: mariadb:latest
+    container_name: db
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mariadb
+    volumes:
+      - ./docker-compose/mariadb:/docker-entrypoint-initdb.d
+    networks:
+      - my-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: server
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./src:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
